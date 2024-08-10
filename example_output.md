@@ -1,4 +1,3 @@
----
 File: `requirements.txt`
 
 vertexai==1.60.0
