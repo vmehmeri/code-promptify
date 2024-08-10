@@ -1,12 +1,8 @@
----
 File: `requirements.txt`
 
 vertexai==1.60.0
 tabulate==0.9.0
 pyperclip==1.9.0
-
----
-File: `output.md`
 
 ---
 File: `requirements.txt`
