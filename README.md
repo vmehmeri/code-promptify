@@ -2,7 +2,7 @@
 
 Code-Promptify is a command-line utility for aggregating code repository contents into a single string based on include and exclude patterns. It also provides metadata information, such as token count and billable characters. It is designed to help you prepare prompts for large language models (LLMs). The output is written to a file and also copied to your clipboard automatically.
 
-**Note**: Currently metadata is only provided based on using Gemini 1.5 Pro or Gemini 1.5 Flash models. That is because token count depends on the specific tokenizer used by the model, which differents among models, though not significantly. If you're using a different model, you can still obtain the token count using either model's tokenizer and you will get a decent approximation.
+**Note**: To count tokens, this tool uses the OpenAI tiktoken tokenizer library and should give you accurate results for most GPT models. For other models (Gemini, Llama, Mistral, etc.) the token count may not be 100% precise but it will be a good approximation. That is because the exact token count depends on the specific tokenizer used by the model, which differs among models. 
 
 See [example_output.md](example_output.md) for what the output looks like for this repo when running with default settings.
 
@@ -10,18 +10,15 @@ Example metadata output:
 
 | Field                   | Value           |
 |-------------------------|-----------------|
-| Model                   | gemini-1.5-flash|
-| Token Count             | 16746           |
-| Billable Character Count| 43197           |
-
-
+| Tokenizer               | openai/tiktoken |
+| Token Count             | 4763            |
+| Character Count         | 15695           |
 
 ## Features
 
 - Aggregate file contents based on include and exclude patterns (glob strings)
 - Automatically ignores virtual environment files
 - Option to ignore empty files 
-- Count tokens using Google's Vertex AI GenerativeModel
 - Output results to a file and clipboard
 
 ## Installation using PIP
@@ -55,9 +52,8 @@ After installation, you can run Promptify using the following command:
 promptify [args]
 ```
 
-### Arguments
 
-- `--model`: Generative model to use for token counting (default: "gemini-1.5-flash")
+### Arguments
 - `--include`: File patterns to include (default: `["*.py", "*.html", "*.js", "*.css", "*.json", "*.yaml", "*.txt", "*.md"]`)
 - `--exclude`: File patterns to exclude (default: `["*.pyc", "*egg-info*", "*tmp*"]`)
 - `--ignore-empty`: Flag to Ignore empty files (default: False)
@@ -79,10 +75,6 @@ promptify [args]
    promptify --exclude "*test*" --ignore-empty
    ```
 
-4. Use a different model for token counting:
-   ```
-   promptify --model "gemini-1.5-pro"
-   ```
 
 ## Output
 See [example_output.md](example_output.md)
@@ -91,7 +83,7 @@ See [example_output.md](example_output.md)
 
 - pyperclip
 - tabulate
-- google-cloud-aiplatform (for accurate token counting for Gemini models)
+- token-count
 
 ## Contributing
 

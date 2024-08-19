@@ -6,9 +6,8 @@ import pyperclip
 import argparse
 
 from tabulate import tabulate
-from vertexai.generative_models import GenerativeModel
+from token_count import TokenCount
 
-_supported_models = ['gemini-1.5-flash', 'gemini-1.5-pro']
 
 def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=False):
     result = []
@@ -48,15 +47,13 @@ def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=Fal
 
     return "\n".join(result)
 
-def get_metadata(model_name, content):
-    if model_name not in _supported_models:
-        raise ValueError("Model not supported. Supported models are 'gemini-1.5-flash' and 'gemini-1.5-pro'.")
-    
-    model_response = GenerativeModel(model_name).count_tokens(content)
+def get_metadata(content):
+    token_count = TokenCount(model_name="gpt-3.5-turbo").num_tokens_from_string(content)
+    char_count = sum(not chr.isspace() for chr in content)
 
-    metadata = [["Model", model_name],
-                ["Token Count", model_response.total_tokens],
-                ["Billable Character Count", model_response.total_billable_characters]]
+    metadata = [["Tokenizer", "openai/tiktoken"],
+                ["Token Count", token_count],
+                ["Character Count", char_count]]
     
     return metadata
 
@@ -64,8 +61,6 @@ def get_metadata(model_name, content):
 
 def main():
     parser = argparse.ArgumentParser(description="Aggregate file contents based on include and exclude patterns.")
-    parser.add_argument('--model', default="gemini-1.5-flash",
-                        help="Generative model to use (default: %(default)s)")
     parser.add_argument('--include', nargs='+', default=["*.py", "*.html", "*.js", "*.css", "*.json", "*.yaml", "*.txt", "*.md"],
                         help="File patterns to include (default: %(default)s)")
     parser.add_argument('--exclude', nargs='+', default=["*.pyc", "*egg-info*", "*tmp*"],
@@ -76,7 +71,7 @@ def main():
     args = parser.parse_args()
 
     output = aggregate_file_contents(args.include, args.exclude, args.ignore_empty)
-    metadata = get_metadata(args.model, output)
+    metadata = get_metadata(output)
 
     print(tabulate(metadata))
 
