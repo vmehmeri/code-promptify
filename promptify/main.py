@@ -38,6 +38,11 @@ def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=Fal
                 if ignore_empty_files and not content.strip():
                     continue
 
+                if 'API_KEY' in content:
+                    print(f"Warning: what seems to be an API KEY was found in {relative_path}. Will skip this file.")
+                    continue
+
+
                 files_included.append(relative_path)
                 result.append(f"---\nFile: `{relative_path}`\n")
                 
