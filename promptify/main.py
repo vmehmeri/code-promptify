@@ -7,11 +7,14 @@ import argparse
 
 from tabulate import tabulate
 from token_count import TokenCount
+from collections import defaultdict
 
 
 def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=False):
     result = []
     current_dir = os.getcwd()
+
+    files_included = []
 
     for root, dirs, files in os.walk(current_dir):
         if 'pyvenv.cfg' in files:
@@ -35,6 +38,7 @@ def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=Fal
                 if ignore_empty_files and not content.strip():
                     continue
 
+                files_included.append(relative_path)
                 result.append(f"---\nFile: `{relative_path}`\n")
                 
                 code_extensions = ['.py', '.json', '.js', '.html', '.css', '.java', '.cpp', '.c', '.h', '.yaml', '.yml']
@@ -45,7 +49,7 @@ def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=Fal
                 
                 result.append("")  # Add an empty line between files
 
-    return "\n".join(result)
+    return "\n".join(result), files_included
 
 def get_metadata(content):
     token_count = TokenCount(model_name="gpt-3.5-turbo").num_tokens_from_string(content)
@@ -54,9 +58,36 @@ def get_metadata(content):
     metadata = [["Tokenizer", "openai/tiktoken"],
                 ["Token Count", token_count],
                 ["Character Count", char_count]]
+                
     
     return metadata
 
+def print_directory_tree(file_paths):
+    def nested_dict():
+        return defaultdict(nested_dict)
+
+    tree = nested_dict()
+
+    # Populate the tree structure
+    for path in file_paths:
+        parts = path.split('/')
+        current = tree
+        for part in parts:
+            current = current[part]
+
+    # Helper function to print the tree
+    def print_tree(node, name=".", prefix="", is_last=True):
+        print(f"{prefix}{'└── ' if is_last else '├── '}{name}")
+        prefix += "    " if is_last else "│   "
+        
+        if isinstance(node, defaultdict):
+            items = sorted(node.items())
+            for i, (child_name, child) in enumerate(items):
+                is_last_item = i == len(items) - 1
+                print_tree(child, child_name, prefix, is_last_item)
+
+    # Print the tree
+    print_tree(tree)
 
 
 def main():
@@ -65,30 +96,42 @@ def main():
                         help="File patterns to include (default: %(default)s)")
     parser.add_argument('--exclude', nargs='+', default=["*.pyc", "*egg-info*", "*tmp*"],
                         help="File patterns to exclude (default: %(default)s)")
+    parser.add_argument('--output', type=str, help="Specify the output file name (optional)")
     parser.add_argument('--ignore-empty', action='store_true',
                         help="Ignore empty files (default: False)")
 
     args = parser.parse_args()
 
-    output = aggregate_file_contents(args.include, args.exclude, args.ignore_empty)
+    output, incl_files = aggregate_file_contents(args.include, args.exclude, args.ignore_empty)
     metadata = get_metadata(output)
 
     print(tabulate(metadata))
+    print("Files included:")
+    print_directory_tree(incl_files)
 
-    try:
-        with open("output.md", "w", encoding="utf-8") as f:
-            f.write(output)
-        
-        print("Output written to output.md")
-    except Exception as e:
-        print(f"Failed to write to file: {str(e)}")
-
+    clipboard_success = False
     try:
         pyperclip.copy(output)
-        spam = pyperclip.paste()
-        print("Contents copied to clipboard")
+        pyperclip.paste()  # This line is just to verify the clipboard contents
+        print("\nContents copied to clipboard")
+        clipboard_success = True
     except Exception as e:
-        print(f"Failed to copy contents to clipboard: {str(e)}")
+        print(f"\nFailed to copy contents to clipboard: {str(e)}")
+
+    if args.output:
+        try:
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write(output)
+            print(f"\nOutput written to {args.output}")
+        except Exception as e:
+            print(f"\nFailed to write to file: {str(e)}")
+    elif not clipboard_success:
+        try:
+            with open("output.promptify", "w", encoding="utf-8") as f:
+                f.write(output)
+            print("Output written to output.promptify")
+        except Exception as e:
+            print(f"\nFailed to write to file: {str(e)}")
 
 if __name__ == "__main__":
     main()
