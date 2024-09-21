@@ -13,13 +13,29 @@ Example metadata output:
 | Tokenizer               | openai/tiktoken |
 | Token Count             | 4763            |
 | Character Count         | 15695           |
+---------------  ---------------
+Files included:
+└── .
+    ├── README.md
+    ├── build
+    │   └── lib
+    │       └── promptify
+    │           ├── __init__.py
+    │           └── main.py
+    ├── example_output.md
+    ├── output.md
+    ├── promptify
+    │   └── __init__.py
+    └── requirements.txt
 
 ## Features
 
 - Aggregate file contents based on include and exclude patterns (glob strings)
 - Automatically ignores virtual environment files
+- Automatically ignores files with API_KEY substring present
 - Option to ignore empty files 
-- Output results to a file and clipboard
+- Output results to the clipboard automatically
+- Optionally output results to a file
 
 ## Installation using PIP
 To install promptify, simply run:
@@ -56,6 +72,7 @@ promptify [args]
 ### Arguments
 - `--include`: File patterns to include (default: `["*.py", "*.html", "*.js", "*.css", "*.json", "*.yaml", "*.txt", "*.md"]`)
 - `--exclude`: File patterns to exclude (default: `["*.pyc", "*egg-info*", "*tmp*"]`)
+- `--output`: File to write the output to (Optional. Output will be automatically written to a file called `output.promptify` if clipboard copy fails)
 - `--ignore-empty`: Flag to Ignore empty files (default: False)
 
 ### Examples
@@ -73,6 +90,11 @@ promptify [args]
 3. Exclude test files and ignore empty files:
    ```
    promptify --exclude "*test*" --ignore-empty
+   ```
+
+4. Include all Python files except any inside a specific directory:
+   ```
+   promptify --include "*.py" --exclude "*config/*" 
    ```
 
 
