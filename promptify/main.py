@@ -12,7 +12,8 @@ from collections import defaultdict
 
 default_excludes = ["*.pyc", "*egg-info*", "*tmp*", ".DS_Store", ".env*"]
 
-def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=False):
+
+def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=False, no_skip=False):
     result = []
     current_dir = os.getcwd()
 
@@ -35,16 +36,16 @@ def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=Fal
                     with open(file_path, 'r', encoding='utf-8') as f:
                         content = f.read()
                 except UnicodeDecodeError:
-                    print(f"Warning: Unable to read {relative_path} as UTF-8. Skipping.")
-                    files_skipped.append(relative_path + " (UnicodeDecodeError)")
+                    #print(f"Warning: Unable to read {relative_path} as UTF-8. Skipping.")
+                    #files_skipped.append(relative_path + " (UnicodeDecodeError)")
                     continue
 
                 if ignore_empty_files and not content.strip():
                     continue
 
-                if 'API_KEY' in content and has_api_key(content):
+                if 'API_KEY' in content and has_api_key(content) and not no_skip:
                     print(f"Warning: what seems to be an API KEY was found in {relative_path}. Skipping")
-                    files_skipped.append(relative_path + " (Potential API key found)")
+                    files_skipped.append(relative_path + " (Potential API key found. Run with --no-skip option to include)")
                     continue
 
 
@@ -125,10 +126,12 @@ def main():
     parser.add_argument('--output', type=str, help="Specify the output file name (optional)")
     parser.add_argument('--ignore-empty', action='store_true',
                         help="Ignore empty files (default: False)")
+    parser.add_argument('--no-skip', action='store_true',
+                        help="Will force the inclusion of files that are skipped due to API keys being found")
 
     args = parser.parse_args()
 
-    output, incl_files, skipped_files = aggregate_file_contents(args.include, args.exclude, args.ignore_empty)
+    output, incl_files, skipped_files = aggregate_file_contents(args.include, args.exclude, args.ignore_empty, args.no_skip)
     metadata = get_metadata(output)
 
     print(tabulate(metadata))
