@@ -4,17 +4,18 @@ import os
 import fnmatch
 import pyperclip
 import argparse
+import re
 
 from tabulate import tabulate
 from token_count import TokenCount
 from collections import defaultdict
-
 
 def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=False):
     result = []
     current_dir = os.getcwd()
 
     files_included = []
+    files_skipped = []
 
     for root, dirs, files in os.walk(current_dir):
         if 'pyvenv.cfg' in files:
@@ -33,13 +34,15 @@ def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=Fal
                         content = f.read()
                 except UnicodeDecodeError:
                     print(f"Warning: Unable to read {relative_path} as UTF-8. Skipping.")
+                    files_skipped.append(relative_path + " (UnicodeDecodeError)")
                     continue
 
                 if ignore_empty_files and not content.strip():
                     continue
 
-                if 'API_KEY' in content:
-                    print(f"Warning: what seems to be an API KEY was found in {relative_path}. Will skip this file.")
+                if 'API_KEY' in content and has_api_key(content):
+                    print(f"Warning: what seems to be an API KEY was found in {relative_path}. Skipping")
+                    files_skipped.append(relative_path + " (Potential API key found)")
                     continue
 
 
@@ -54,7 +57,7 @@ def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=Fal
                 
                 result.append("")  # Add an empty line between files
 
-    return "\n".join(result), files_included
+    return "\n".join(result), files_included, files_skipped
 
 def get_metadata(content):
     token_count = TokenCount(model_name="gpt-3.5-turbo").num_tokens_from_string(content)
@@ -66,6 +69,22 @@ def get_metadata(content):
                 
     
     return metadata
+
+def has_api_key(code):
+    # Common API key patterns
+    patterns = [
+        r"[a-zA-Z0-9]{32}",  # 32 alphanumeric characters
+        r"sk_[a-zA-Z0-9]{64}", # Stripe secret key pattern
+        r"pk_[a-zA-Z0-9]{64}"  # Stripe public key pattern
+        # Add more patterns as needed
+    ]
+
+    for pattern in patterns:
+        matches = re.findall(pattern, code)
+        if matches:
+            return True
+
+    return False
 
 def print_directory_tree(file_paths):
     def nested_dict():
@@ -107,12 +126,16 @@ def main():
 
     args = parser.parse_args()
 
-    output, incl_files = aggregate_file_contents(args.include, args.exclude, args.ignore_empty)
+    output, incl_files, skipped_files = aggregate_file_contents(args.include, args.exclude, args.ignore_empty)
     metadata = get_metadata(output)
 
     print(tabulate(metadata))
     print("Files included:")
     print_directory_tree(incl_files)
+    
+    if skipped_files:
+        print("\nFiles skipped:")
+        print_directory_tree(skipped_files)
 
     clipboard_success = False
     try:
