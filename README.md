@@ -32,7 +32,7 @@ Files included:
 
 - Aggregate file contents based on include and exclude patterns (glob strings)
 - Automatically ignores virtual environment files
-- Automatically ignores files with API_KEY substring present
+- Automatically ignores files where an API key was found 
 - Option to ignore empty files 
 - Output results to the clipboard automatically
 - Optionally output results to a file

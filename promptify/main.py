@@ -10,6 +10,8 @@ from tabulate import tabulate
 from token_count import TokenCount
 from collections import defaultdict
 
+default_excludes = ["*.pyc", "*egg-info*", "*tmp*", ".DS_Store", ".env*"]
+
 def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=False):
     result = []
     current_dir = os.getcwd()
@@ -27,7 +29,7 @@ def aggregate_file_contents(include_files, exclude_files, ignore_empty_files=Fal
             relative_path = os.path.relpath(file_path, current_dir)
 
             if any(fnmatch.fnmatch(relative_path, pattern) for pattern in include_files) and \
-               not any(fnmatch.fnmatch(relative_path, pattern) for pattern in exclude_files):
+               not any(fnmatch.fnmatch(relative_path, pattern) for pattern in exclude_files + default_excludes):
                 
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
