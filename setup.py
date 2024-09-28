@@ -5,7 +5,7 @@ with open('requirements.txt') as f:
 
 setup(
     name="code-promptify",
-    version="0.3.0",
+    version="0.4.0",
     packages=find_packages(),
     install_requires=required,
     entry_points={
