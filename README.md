@@ -7,7 +7,7 @@ Code-Promptify is a command-line utility for aggregating code repository content
 See [example_output.md](example_output.md) for what the output looks like for this repo when running with default settings.
 
 Example metadata output:
-
+```
 | Field                   | Value           |
 |-------------------------|-----------------|
 | Tokenizer               | openai/tiktoken |
@@ -27,6 +27,7 @@ Files included:
     ├── promptify
     │   └── __init__.py
     └── requirements.txt
+```
 
 ## Features
 
@@ -34,7 +35,7 @@ Files included:
 - Automatically ignores virtual environment files
 - Automatically ignores files where an API key was found 
 - Option to ignore empty files 
-- Output results to the clipboard automatically
+- Output results to the clipboard automatically (May not work on Linux or Windows)
 - Optionally output results to a file
 
 ## Installation using PIP
@@ -74,6 +75,7 @@ promptify [args]
 - `--exclude`: File patterns to exclude (default: `["*.pyc", "*egg-info*", "*tmp*"]`)
 - `--output`: File to write the output to (Optional. Output will be automatically written to a file called `output.promptify` if clipboard copy fails)
 - `--ignore-empty`: Flag to Ignore empty files (default: False)
+- `--no-skip`: Force-include files where potential API keys are detected (default: False)
 
 ### Examples
 
@@ -87,15 +89,16 @@ promptify [args]
    promptify --include "*.py" "*.js"
    ```
 
-3. Exclude test files and ignore empty files:
+3. Include all files but exclude test files and ignore empty files:
    ```
    promptify --exclude "*test*" --ignore-empty
    ```
 
 4. Include all Python files except any inside a specific directory:
    ```
-   promptify --include "*.py" --exclude "*config/*" 
+   promptify --include "*.py" --exclude "config/*" 
    ```
+
 
 
 ## Output
