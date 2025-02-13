@@ -50,15 +50,18 @@ def aggregate_file_contents(
                 if ignore_empty_files and not content.strip():
                     continue
 
-                if has_api_key(content) and not no_skip:
-                    print(
-                        f"Warning: what seems to be an API KEY was found in {relative_path}. Skipping"
-                    )
+                api_key_found, confidence = has_api_key(content)
+                if api_key_found and confidence == "HIGH" and not no_skip:
                     files_skipped.append(
                         relative_path
-                        + " (Potential API key found. Run with --no-skip option to include)"
+                        + " (What is very likely to be an API key was found. Run with --no-skip option to ignore this and include the file)"
                     )
                     continue
+
+                elif api_key_found and confidence != "HIGH":
+                    print(
+                        f"Caution: Is there potentially an API KEY in {relative_path}? A long string of alphanumeric characters was found."
+                    )
 
                 files_included.append(relative_path)
                 result.append(f"---\nFile: `{relative_path}`\n")
@@ -100,16 +103,10 @@ def get_metadata(content):
 
 
 def has_api_key(code):
-    # Common API key patterns
+
     patterns = [
-        # General patterns
-        r"[a-zA-Z0-9]{32}",  # 32 character alphanumeric (e.g., MD5)
-        r"[a-zA-Z0-9]{40}",  # 40 character alphanumeric (e.g., SHA1)
-        r"[A-Za-z0-9-_]{64}",  # 64 character alphanumeric with dash/underscore
-        
         # Service-specific patterns
         r"sk_[a-zA-Z0-9]{24,}",  # Stripe secret key
-        r"pk_[a-zA-Z0-9]{24,}",  # Stripe public key
         r"rk_[a-zA-Z0-9]{24,}",  # Stripe restricted key
         r"[A-Za-z0-9_]{21}:[A-Za-z0-9_-]{40}",  # Twitter API key
         r"AIza[0-9A-Za-z-_]{35}",  # Google API key
@@ -117,20 +114,28 @@ def has_api_key(code):
         r"[0-9a-f]{32}-us[0-9]{1,2}",  # MailChimp API key
         r"xox[baprs]-[0-9]{12}-[0-9]{12}-[0-9a-zA-Z]{24}",  # Slack tokens
         r"aws[_-][a-zA-Z0-9]{20,}",  # AWS access key
-        
         # Common environment variable patterns
         r"(?i)(api[_-]?key|api[_-]?secret|access[_-]?token|auth[_-]?token|client[_-]?secret)['\"]?\s*[:=]\s*['\"]([a-zA-Z0-9-_\.]{32,})['\"]",
-        
         # Bearer token pattern
         r"bearer\s+[a-zA-Z0-9_\-\.]+",  # Bearer token (case insensitive)
+    ]
+
+    generic_patterns = [
+        r"[a-zA-Z0-9]{32}",  # 32 character alphanumeric (e.g., MD5)
+        r"[a-zA-Z0-9]{40}",  # 40 character alphanumeric (e.g., SHA1)
+        r"[A-Za-z0-9-_]{64}",  # 64 character alphanumeric with dash/underscore
     ]
 
     # Make the check case-insensitive for better detection
     for pattern in patterns:
         if re.search(pattern, code, re.IGNORECASE):
-            return True
+            return True, "HIGH"
 
-    return False
+    for pattern in generic_patterns:
+        if re.search(pattern, code, re.IGNORECASE):
+            return True, "LOW"
+
+    return False, ""
 
 
 def print_directory_tree(file_paths):
